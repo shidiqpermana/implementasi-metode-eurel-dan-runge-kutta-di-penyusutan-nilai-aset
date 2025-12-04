@@ -158,22 +158,27 @@ def main():
     st.markdown(
         """
         Aplikasi ini memodelkan **penyusutan aset tetap** menggunakan persamaan diferensial biasa (PDB)
-        dengan model saldo menurun:
-
-        \\[
-        \\frac{dV}{dt} = -k \\cdot V
-        \\]
-
+        dengan model saldo menurun berikut:
+        """
+    )
+    st.latex(r"\frac{dV}{dt} = -k \cdot V")
+    st.markdown(
+        """
         di mana:
-        - \\(V\\) adalah **Net Book Value (NBV)** aset tetap,
-        - \\(t\\) adalah waktu (tahun),
-        - \\(k\\) adalah tingkat penyusutan tahunan.
+
+        - \(V\) adalah **Net Book Value (NBV)** aset tetap  
+        - \(t\) adalah waktu (tahun)  
+        - \(k\) adalah tingkat penyusutan tahunan
         """
     )
 
     # Sidebar inputs
     st.sidebar.header("Pengaturan Model")
     symbol = st.sidebar.text_input("Simbol Emiten", value="AALI")
+    method_option = st.sidebar.selectbox(
+        "Pilih Metode Numerik",
+        ("Euler", "Runge-Kutta Orde 4 (RK4)"),
+    )
     k_input = st.sidebar.number_input(
         "Tingkat Penyusutan k (per tahun)",
         min_value=0.0,
@@ -252,9 +257,12 @@ def main():
         markersize=6,
     )
 
-    # Numerical + analytical curves
-    ax.plot(t_sim, V_euler, "--", label="Euler", color="tab:blue")
-    ax.plot(t_sim, V_rk4, "-.", label="RK4", color="tab:orange")
+    # Numerical + analytical curves (hanya metode yang dipilih + solusi analitik)
+    if method_option == "Euler":
+        ax.plot(t_sim, V_euler, "--", label="Euler", color="tab:blue")
+    else:
+        ax.plot(t_sim, V_rk4, "-.", label="RK4", color="tab:orange")
+
     ax.plot(t_sim, V_analytic, ":", label="Solusi Analitik", color="tab:green")
 
     ax.set_xlabel(f"Waktu sejak {base_year} (tahun)")
@@ -267,17 +275,21 @@ def main():
 
     # Comparison table at final time
     historical_final = float(nbv_values[-1])
-    euler_final = float(V_euler[-1])
-    rk4_final = float(V_rk4[-1])
     analytic_final = float(V_analytic[-1])
+
+    if method_option == "Euler":
+        method_name = "Euler"
+        method_final = float(V_euler[-1])
+    else:
+        method_name = "RK4"
+        method_final = float(V_rk4[-1])
 
     comparison_df = pd.DataFrame(
         {
-            "Metode": ["Historis (NBV Data)", "Euler", "RK4", "Solusi Analitik"],
+            "Metode": ["Historis (NBV Data)", method_name, "Solusi Analitik"],
             "V Akhir Periode": [
                 historical_final,
-                euler_final,
-                rk4_final,
+                method_final,
                 analytic_final,
             ],
         }
